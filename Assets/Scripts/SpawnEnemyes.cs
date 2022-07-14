@@ -4,64 +4,39 @@ using System.Linq;
 using UnityEngine;
 
 
-public class SpawnEnemyes : MonoBehaviour
+public class SpawnEnemyes : ObjectPool
 {
-    [SerializeField] private GameObject[] _monsters;
+    [SerializeField] public Monster[] _monsters;
     [SerializeField] private List<Transform> _spawnPoints;
-    [SerializeField] private GameObject _container;
-    [SerializeField] private int _capacity;
-
-    private List<GameObject> _pool = new List<GameObject>();
-
+    
     private int _randomPosition;
-    private float _spawnRate = 2f;
-    private float _elapsedTime = 0.0f;
 
     private void Start()
     {
-        Initialize();
-    }
+        Initialize(_monsters);
+        StartCoroutine(Spawn());
+    }     
 
-    private void Update()
+    private IEnumerator Spawn()
     {
-        _elapsedTime += Time.deltaTime;
+        var waitTwoSeconds = new WaitForSeconds(2F);
 
-        if (_elapsedTime >= _spawnRate)
+        while (_spawnPoints.Count > 0)
         {
-            if (TryGetObject(out GameObject monster))
+            if (TryGetObject(out Monster monster))
             {
-                _elapsedTime = 0;
-
-                if (_spawnPoints.Count > 0)
-                {
-                    _randomPosition = Random.Range(0, _spawnPoints.Count);
-                    SetMonster(monster, _spawnPoints[_randomPosition].position);
-                    _spawnPoints.RemoveAt(_randomPosition);
-                }
+                _randomPosition = Random.Range(0, _spawnPoints.Count);
+                SetMonster(monster, _spawnPoints[_randomPosition].position);
+                _spawnPoints.RemoveAt(_randomPosition);
+                yield return waitTwoSeconds;
             }
-        }                
-    }
-
-    private void Initialize()
-    {
-        for (int i = 0; i < _capacity; i++)
-        {
-            GameObject spawned = Instantiate(_monsters[Random.Range(0, _monsters.Length)], _container.transform);
-            spawned.gameObject.SetActive(false);
-            _pool.Add(spawned);
         }
+        
     }
 
-    private bool TryGetObject(out GameObject result)
+    private void SetMonster(Monster monster, Vector3 spawnPoint)
     {
-        result = _pool[Random.Range(0, _pool.Count - 1)];
-
-        return result.gameObject.activeSelf == false ? result != null : result = null;
-    }
-
-    private void SetMonster(GameObject monster, Vector3 spawnPoint)
-    {
-        monster.SetActive(true);
+        monster.gameObject.SetActive(true);
         monster.transform.position = spawnPoint;
     }          
 }
